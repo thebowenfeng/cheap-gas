@@ -9,6 +9,8 @@ group = "com.bowenfeng"
 version = "0.0.1-SNAPSHOT"
 description = "petrolspyplus"
 
+extra["kotlin-coroutines.version"] = "1.11.0"
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -25,6 +27,12 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation(platform("io.ktor:ktor-bom:3.5.1"))
+    implementation("io.ktor:ktor-client-core")
+    implementation("io.ktor:ktor-client-cio")
+    implementation("io.ktor:ktor-client-encoding")
+    implementation("io.ktor:ktor-client-content-negotiation")
+    implementation("io.ktor:ktor-serialization-jackson3")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")

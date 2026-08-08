@@ -10,11 +10,12 @@ enum class FuelType {
     LPG,
     TruckDSL,
     E85,
-    BIODIESEL
+    BIODIESEL,
+    AdBlue
 }
 
 data class Price(
     val type: FuelType,
-    val updated: Double,
+    val updated: Long,
     val amount: Double,
 )
