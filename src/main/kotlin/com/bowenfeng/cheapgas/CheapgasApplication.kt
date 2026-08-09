@@ -1,11 +1,11 @@
-package com.bowenfeng.petrolspyplus
+package com.bowenfeng.cheapgas
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class PetrolspyplusApplication
+class CheapgasApplication
 
 fun main(args: Array<String>) {
-    runApplication<PetrolspyplusApplication>(*args)
+    runApplication<CheapgasApplication>(*args)
 }

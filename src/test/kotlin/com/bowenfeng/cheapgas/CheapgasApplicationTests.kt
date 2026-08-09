@@ -1,10 +1,10 @@
-package com.bowenfeng.petrolspyplus
+package com.bowenfeng.cheapgas
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class PetrolspyplusApplicationTests {
+class CheapgasApplicationTests {
 
     @Test
     fun contextLoads() {

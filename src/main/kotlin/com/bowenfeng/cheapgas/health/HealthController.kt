@@ -1,4 +1,4 @@
-package com.bowenfeng.petrolspyplus.health
+package com.bowenfeng.cheapgas.health
 
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController

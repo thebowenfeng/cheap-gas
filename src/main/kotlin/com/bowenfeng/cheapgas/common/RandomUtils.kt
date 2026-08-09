@@ -1,4 +1,4 @@
-package com.bowenfeng.petrolspyplus.common
+package com.bowenfeng.cheapgas.common
 
 import java.security.SecureRandom
 

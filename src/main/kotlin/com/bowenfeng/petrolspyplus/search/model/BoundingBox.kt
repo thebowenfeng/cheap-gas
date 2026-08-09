@@ -1,8 +1,0 @@
-package com.bowenfeng.petrolspyplus.search.model
-
-import com.bowenfeng.petrolspyplus.common.Coordinate
-
-data class BoundingBox(
-    val topRight: Coordinate,
-    val bottomLeft: Coordinate,
-)

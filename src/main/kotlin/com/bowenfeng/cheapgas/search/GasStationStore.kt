@@ -1,7 +1,7 @@
-package com.bowenfeng.petrolspyplus.search
+package com.bowenfeng.cheapgas.search
 
-import com.bowenfeng.petrolspyplus.search.model.BoundingBox
-import com.bowenfeng.petrolspyplus.search.model.GasStation
+import com.bowenfeng.cheapgas.search.model.BoundingBox
+import com.bowenfeng.cheapgas.search.model.GasStation
 import org.springframework.stereotype.Repository
 
 @Repository
