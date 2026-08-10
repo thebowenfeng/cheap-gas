@@ -3,6 +3,7 @@ package com.bowenfeng.cheapgas.search
 import com.bowenfeng.cheapgas.search.model.BoundingBox
 import com.bowenfeng.cheapgas.search.model.GasStation
 import com.bowenfeng.cheapgas.search.model.StationSearchRequest
+import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/search")
+@CrossOrigin(origins = ["*"])
 class SearchController(
     val gasStationStore: GasStationStore
 ) {

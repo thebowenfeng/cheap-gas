@@ -3,6 +3,7 @@ package com.bowenfeng.cheapgas.search.model
 import com.bowenfeng.cheapgas.common.Coordinate
 
 data class GasStation(
+    val id: String,
     val name: String,
     val location: Coordinate,
     val address: String,
