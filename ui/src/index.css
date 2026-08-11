@@ -15,7 +15,7 @@
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font: 18px/1.45 var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
@@ -94,6 +94,21 @@ h1 {
   margin-block-end: 0;
 }
 
+h2 {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+h3 {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+h4 {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
 .maplibregl-marker:has(.station-pop-up) {
   z-index: 1000;
 }
@@ -105,14 +120,57 @@ h1 {
 }
 
 .station-pop-up {
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--text);
+
   background-color: white;
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  padding: 10px;
-  box-shadow: 0 0 20px 5px grey;
+  padding: 15px;
+  box-shadow: 0 0 20px 0 grey;
+  max-width: min(300px, 80vw);
+  box-sizing: border-box;
+}
+
+.station-pop-up > :is(h1, p) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.station-pop-up-heading {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  column-gap: 10px;
+}
+
+.station-pop-up-heading > :is(h1, h2) {
+  line-height: 1.1;
+}
+
+.station-pop-up-heading h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.station-pop-up-heading h1 {
+  flex-shrink: 0;
+  margin-left: auto;
+  overflow: visible;
+  cursor: pointer;
 }
 
 .station-pop-up-img {
   cursor: pointer;
+}
+
+.station-price {
+  display: flex;
+  flex-direction: row;
 }
