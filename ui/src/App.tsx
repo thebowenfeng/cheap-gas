@@ -2,7 +2,8 @@ import './App.css'
 import {MapComponent} from "./map/map.tsx";
 import {Dropdown} from "./common/components/dropdown.tsx";
 import {type ComponentProps, useState} from "react";
-import type {FuelType} from "./common/types.ts";
+import type {Coordinate, FuelType} from "./common/types.ts";
+import {GPS} from "./gps/gps.tsx";
 
 const FUEL_TYPES = [
     {
@@ -54,25 +55,64 @@ const FUEL_TYPES = [
         value: 'AdBlue'
     }
 ];
+const FILTER_TYPES = [
+    {
+        label: 'Select an option',
+        value: 'DESELECT'
+    },
+    {
+        label: 'My location',
+        value: 'GPS'
+    }
+];
+
+const mapFilterToFilterType = (mapFilter: ComponentProps<typeof MapComponent>['mapFilter']) => {
+    if (mapFilter?.gpsLocationFilter) {
+        return 'GPS';
+    }
+    return undefined;
+}
 
 const App = () => {
     const [mapFilter, setMapFilter] = useState<ComponentProps<typeof MapComponent>['mapFilter']>(undefined);
+    const [currPos, setCurrPos] = useState<Coordinate | undefined>(undefined);
 
     return (
       <>
-        <div className="header-container">
-          <Dropdown
-              options={FUEL_TYPES}
-              value={mapFilter?.gasTypeFilter}
-              onValueChange={(value) => {
-                  if (value !== 'DESELECT') {
-                      setMapFilter((filter) => ({ ...filter, gasTypeFilter: value as FuelType }));
-                  } else {
-                      setMapFilter((filter) => ({ ...filter, gasTypeFilter: undefined }));
-              }}}
+          <div className="header-container">
+              <Dropdown
+                  options={FILTER_TYPES}
+                  value={mapFilterToFilterType(mapFilter)}
+                  onValueChange={(value) => {
+                      if (value !== 'DESELECT') {
+                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: currPos }));
+                      } else {
+                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: undefined }));
+                      }
+                  }}
+              />
+              <Dropdown
+                  options={FUEL_TYPES}
+                  value={mapFilter?.gasTypeFilter}
+                  onValueChange={(value) => {
+                      if (value !== 'DESELECT') {
+                          setMapFilter((filter) => ({ ...filter, gasTypeFilter: value as FuelType }));
+                      } else {
+                          setMapFilter((filter) => ({ ...filter, gasTypeFilter: undefined }));
+                      }
+                  }}
+              />
+          </div>
+          <MapComponent mapFilter={mapFilter} />
+          <GPS
+              onLocationChange={(pos) => {
+                  setCurrPos(pos);
+              }}
+              onError={() => {
+                  setCurrPos(undefined);
+              }}
+              interval={1000}
           />
-        </div>
-        <MapComponent mapFilter={mapFilter} />
       </>
     )
 }

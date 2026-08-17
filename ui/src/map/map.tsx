@@ -1,12 +1,12 @@
-import { startTransition, Suspense, use, useEffect, useRef, useState} from 'react';
-import { Map, setWorkerUrl } from 'maplibre-gl';
+import {startTransition, Suspense, use, useEffect, useMemo, useRef, useState} from 'react';
+import {GeolocateControl, Map, setWorkerUrl} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {searchGasStations} from "../api/client.ts";
 import {StationMarker} from "./marker.tsx";
-import {debounce} from "../common/utils.ts";
+import {calcLongLatDistance, debounce} from "../common/utils.ts";
 import type {GasStation} from "../api/types.ts";
-import type {FuelType} from "../common/types.ts";
+import type {Coordinate, FuelType} from "../common/types.ts";
 
 setWorkerUrl(workerUrl);
 
@@ -18,14 +18,67 @@ interface MarkerListProps {
 
 interface MapFilter {
     gasTypeFilter?: FuelType
+    gpsLocationFilter?: Coordinate
 }
 
 interface MapComponentProps {
     mapFilter?: MapFilter;
 }
 
+const DISTANCE_BUCKETS = [1000, 2000, 4000, 8000, 16000];
+const findLeastBucket = (distance: number) => {
+    return DISTANCE_BUCKETS.filter((dist) => distance <= dist);
+}
+
 const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
     const result = use(getStationRequest);
+    const gpsFiltered = useMemo(() => {
+        if (!mapFilter?.gpsLocationFilter) {
+            return result;
+        }
+        const distanceBucketMap: Record<number, {
+            cheapest: GasStation | undefined,
+            cheapestDistance: number | undefined
+        }> = DISTANCE_BUCKETS.reduce((prev, curr) => ({
+            ...prev,
+            [curr]: {
+                cheapest: undefined,
+                cheapestDistance: undefined
+            }
+        }), {});
+
+        result?.forEach((station) => {
+            const distance = calcLongLatDistance(station.location, mapFilter.gpsLocationFilter!);
+            if (distance === undefined) {
+                return;
+            }
+
+            const buckets = findLeastBucket(distance);
+            if (buckets) {
+                buckets.map((bucket) => distanceBucketMap[bucket]).forEach((mapEntry) => {
+                    const prevFuelData = mapEntry.cheapest?.prices.find((price) => mapFilter.gasTypeFilter ? price.type === mapFilter.gasTypeFilter : price.type === 'U91');
+                    const currFuelData = station.prices.find((price) => mapFilter.gasTypeFilter ? price.type === mapFilter.gasTypeFilter : price.type === 'U91');
+                    if (currFuelData && (
+                        prevFuelData === undefined ||
+                        currFuelData.amount < prevFuelData.amount ||
+                        (
+                            currFuelData.amount === prevFuelData.amount &&
+                            (
+                                mapEntry.cheapestDistance === undefined ||
+                                distance < mapEntry.cheapestDistance
+                            )
+                        )
+                    )) {
+                        mapEntry.cheapest = station;
+                        mapEntry.cheapestDistance = distance;
+                    }
+                });
+            }
+        });
+
+        const finalResults = Object.values(distanceBucketMap).map((val) => val.cheapest).filter((val) => val !== undefined);
+        return [...new window.Map(finalResults.map((station) => [station.id, station])).values()];
+    }, [result, mapFilter?.gpsLocationFilter, mapFilter?.gasTypeFilter])
 
     const filterGasStation = (gasStation: GasStation) => {
         if (mapFilter) {
@@ -36,7 +89,7 @@ const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
         return true;
     }
 
-    return map && result?.filter(filterGasStation).map((station) => {
+    return map && gpsFiltered?.filter(filterGasStation).map((station) => {
         const stationCopy = {...station};
         if (mapFilter) {
             if (mapFilter.gasTypeFilter) {
@@ -54,38 +107,58 @@ export const MapComponent = ({ mapFilter }: MapComponentProps) => {
     const [getStationRequest, setGetStationRequest] = useState<Promise<GasStation[] | undefined>>(Promise.resolve(undefined));
 
     useEffect(() => {
-        if (!containerRef.current) {
-            return;
+        let map: Map;
+        const initMap = (initialCoords: Coordinate | undefined) => {
+            if (!containerRef.current) {
+                return;
+            }
+
+            map = new Map({
+                container: containerRef.current,
+                style: 'https://tiles.openfreemap.org/styles/bright',
+                center: initialCoords ? [initialCoords.longitude, initialCoords.latitude] : [144.9631, -37.8136],
+                zoom: 14,
+            });
+            map.addControl(
+                new GeolocateControl({
+                    positionOptions: { enableHighAccuracy: true },
+                    trackUserLocation: true,
+                    showUserLocation: true
+                })
+            );
+            setMap(map);
+
+            const setBounds = () => {
+                const bounds = map.getBounds();
+                const topRight = bounds.getNorthEast();
+                const bottomLeft = bounds.getSouthWest();
+                startTransition(() => {
+                    setGetStationRequest(searchGasStations({
+                        topRight: {
+                            longitude: topRight.lng,
+                            latitude: topRight.lat
+                        },
+                        bottomLeft: {
+                            longitude: bottomLeft.lng,
+                            latitude: bottomLeft.lat
+                        }
+                    }))
+                })
+            }
+            map.on('move', debounce(300, setBounds));
         }
 
-        const map = new Map({
-            container: containerRef.current,
-            style: 'https://tiles.openfreemap.org/styles/bright',
-            center: [144.9631, -37.8136],
-            zoom: 14,
-        });
-        setMap(map);
-
-        const setBounds = () => {
-            const bounds = map.getBounds();
-            const topRight = bounds.getNorthEast();
-            const bottomLeft = bounds.getSouthWest();
-            startTransition(() => {
-                setGetStationRequest(searchGasStations({
-                    topRight: {
-                        longitude: topRight.lng,
-                        latitude: topRight.lat
-                    },
-                    bottomLeft: {
-                        longitude: bottomLeft.lng,
-                        latitude: bottomLeft.lat
-                    }
-                }))
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                initMap({ longitude: pos.coords.longitude, latitude: pos.coords.latitude });
+            }, () => {
+                initMap(undefined);
             })
+        } else {
+            initMap(undefined);
         }
-        map.on('move', debounce(300, setBounds));
 
-        return () => map.remove();
+        return () => map?.remove();
     }, []);
 
     return (

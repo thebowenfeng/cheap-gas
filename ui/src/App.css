@@ -199,4 +199,9 @@
   flex-direction: row;
   justify-content: center;
   padding-top: 2vh;
+  pointer-events: none;
+}
+
+.header-container > * {
+  pointer-events: auto;
 }
