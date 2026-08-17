@@ -6,23 +6,49 @@ import {searchGasStations} from "../api/client.ts";
 import {StationMarker} from "./marker.tsx";
 import {debounce} from "../common/utils.ts";
 import type {GasStation} from "../api/types.ts";
+import type {FuelType} from "../common/types.ts";
 
 setWorkerUrl(workerUrl);
 
 interface MarkerListProps {
     getStationRequest: Promise<GasStation[] | undefined>,
-    map: Map
+    map: Map,
+    mapFilter?: MapFilter
 }
 
-const MarkerList = ({ getStationRequest, map }: MarkerListProps) => {
+interface MapFilter {
+    gasTypeFilter?: FuelType
+}
+
+interface MapComponentProps {
+    mapFilter?: MapFilter;
+}
+
+const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
     const result = use(getStationRequest);
 
-    return map && result?.map((station) => {
-        return <StationMarker station={station} map={map} key={station.id} />
+    const filterGasStation = (gasStation: GasStation) => {
+        if (mapFilter) {
+            if (mapFilter.gasTypeFilter) {
+                return gasStation.prices.some((price) => price.type === mapFilter.gasTypeFilter);
+            }
+        }
+        return true;
+    }
+
+    return map && result?.filter(filterGasStation).map((station) => {
+        const stationCopy = {...station};
+        if (mapFilter) {
+            if (mapFilter.gasTypeFilter) {
+                stationCopy.prices = station.prices.filter((price) => price.type === mapFilter.gasTypeFilter);
+            }
+        }
+
+        return <StationMarker station={stationCopy} map={map} key={station.id} />
     })
 };
 
-export const MapComponent = () => {
+export const MapComponent = ({ mapFilter }: MapComponentProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [map, setMap] = useState<Map | undefined>(undefined);
     const [getStationRequest, setGetStationRequest] = useState<Promise<GasStation[] | undefined>>(Promise.resolve(undefined));
@@ -67,7 +93,7 @@ export const MapComponent = () => {
             <div ref={containerRef} className="map" />
             <Suspense>
                 {map && (
-                    <MarkerList getStationRequest={getStationRequest} map={map} />
+                    <MarkerList getStationRequest={getStationRequest} map={map} mapFilter={mapFilter} />
                 )}
             </Suspense>
         </>

@@ -1,4 +1,4 @@
-import type {Coordinate} from "../common/types.ts";
+import type {Coordinate, FuelType} from "../common/types.ts";
 
 interface TradingHour {
     startMinute: number,
@@ -6,7 +6,7 @@ interface TradingHour {
 }
 
 interface Price {
-    type: "E10" | "U91" | "DIESEL" | "PremDSL" | "U95" | "U98" | "LPG" | "TruckDSL" | "E85" | "BIODIESEL" | "AdBlue",
+    type: FuelType,
     updated: number,
     amount: number
 }
