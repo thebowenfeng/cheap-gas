@@ -109,14 +109,22 @@ h4 {
   margin-block-end: 0;
 }
 
-.maplibregl-marker:has(.station-pop-up) {
+.maplibregl-popup.station-popup {
   z-index: 1000;
+}
+
+.station-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .station-pop-up-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .station-pop-up {
@@ -159,14 +167,23 @@ h4 {
   text-overflow: ellipsis;
 }
 
-.station-pop-up-heading h1 {
+.station-pop-up-heading button {
   flex-shrink: 0;
   margin-left: auto;
-  overflow: visible;
+  padding: 0;
+  border: 0;
+  color: var(--text-h);
+  background: transparent;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
 }
 
 .station-pop-up-img {
+  display: block;
+  height: 35px;
+  width: auto;
   cursor: pointer;
 }
 

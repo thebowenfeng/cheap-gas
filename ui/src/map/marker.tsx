@@ -1,6 +1,6 @@
 import type {GasStation} from "../api/types.ts";
-import { type Map, Marker } from 'maplibre-gl';
-import {type FC, useEffect, useState} from "react";
+import { type Map, Marker, Popup } from 'maplibre-gl';
+import {type FC, useEffect, useMemo} from "react";
 import {createPortal} from "react-dom";
 
 interface StationMarkerProps {
@@ -20,52 +20,73 @@ const prettifyUnixTimestamp = (timestamp: number) => {
     return `${Math.round(difference / 60)} minutes ago`
 }
 
-export const StationMarkerView = ({ station }: { station: GasStation }) => {
-    const [isOpen, setIsOpen] = useState<boolean>(false);
-
+export const StationMarkerView = ({ station, onClose }: { station: GasStation, onClose?: () => void }) => {
     return (
-        <div className="station-pop-up-container">
-            {isOpen && (
-                <div className="station-pop-up">
-                    <div className="station-pop-up-heading">
-                        <h2>{station.name}</h2>
-                        <h1 onClick={() => setIsOpen(false)}>X</h1>
-                    </div>
-                    <p>{station.address}</p>{station.prices.map((price) => (
-                        <div className="station-price">
-                            <h4>{price.type}: ${price.amount}</h4>
-                            <p>({prettifyUnixTimestamp(price.updated)})</p>
-                        </div>
-                    ))}
+        <div className="station-pop-up">
+            <div className="station-pop-up-heading">
+                <h2>{station.name}</h2>
+                {onClose && (
+                    <button type="button" aria-label="Close station details" onClick={onClose}>×</button>
+                )}
+            </div>
+            <p>{station.address}</p>{station.prices.map((price) => (
+                <div className="station-price" key={`${price.type}-${price.updated}`}>
+                    <h4>{price.type}: ${price.amount}</h4>
+                    <p>({prettifyUnixTimestamp(price.updated)})</p>
                 </div>
-            )}
-            <img
-                src={`http://localhost:8080/icons/${station.icon}`}
-                height="35vh"
-                width="auto"
-                onClick={() => setIsOpen(!isOpen)}
-                className="station-pop-up-img"
-            />
+            ))}
         </div>
     )
 }
 
+const StationMarkerIcon = ({ station }: { station: GasStation }) => (
+    <img
+        src={`http://localhost:8080/icons/${station.icon}`}
+        alt={`${station.name} marker`}
+        className="station-pop-up-img"
+    />
+)
+
 export const StationMarker: FC<StationMarkerProps> = ({ station, map }) => {
-    const container = document.createElement('div');
+    const markerContainer = document.createElement('div');
+    const popupContainer = document.createElement('div');
+    const popup = useMemo(() => {
+        const pup = new Popup({
+            className: 'station-popup',
+            closeButton: false,
+            maxWidth: 'min(300px, calc(100vw - 24px))',
+            offset: 35,
+            padding: {top: 12, right: 12, bottom: 12, left: 12}
+        });
+        pup.setDOMContent(popupContainer)
+
+        return pup;
+    }, [popupContainer]);
 
     useEffect(() => {
         const marker = new Marker({
-           element: container,
+           element: markerContainer,
            anchor: 'bottom'
-       }).setLngLat([station.location.longitude, station.location.latitude]).addTo(map);
+       })
+            .setLngLat([station.location.longitude, station.location.latitude])
+            .setPopup(popup)
+            .addTo(map);
 
         return () => {
            marker.remove();
        };
-    }, []);
+    }, [map, markerContainer, popup, station.location.latitude, station.location.longitude]);
 
-    return createPortal(
-        <StationMarkerView station={station} />,
-        container
+    return (
+        <>
+            {createPortal(
+                <StationMarkerIcon station={station} />,
+                markerContainer
+            )}
+            {createPortal(
+                <StationMarkerView station={station} onClose={popup.remove} />,
+                popupContainer
+            )}
+        </>
     );
 }
