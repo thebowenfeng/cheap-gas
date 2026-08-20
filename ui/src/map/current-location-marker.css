@@ -1,0 +1,67 @@
+.current-location-marker-container {
+    z-index: 10;
+}
+
+.current-location-marker {
+    position: relative;
+    display: block;
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+}
+
+.current-location-marker__dot,
+.current-location-marker__pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.current-location-marker__dot {
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    background: #4285f4;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+
+.current-location-marker__pulse {
+    width: 14px;
+    height: 14px;
+    background: rgb(66 133 244 / 32%);
+    animation: current-location-marker-pulse 2.4s ease-out infinite;
+}
+
+.current-location-marker__pulse--delayed {
+    animation-delay: 1.2s;
+}
+
+@keyframes current-location-marker-pulse {
+    0% {
+        opacity: 0.75;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    75%,
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(3.25);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .current-location-marker__pulse {
+        width: 32px;
+        height: 32px;
+        opacity: 0.28;
+        animation: none;
+    }
+
+    .current-location-marker__pulse--delayed {
+        display: none;
+    }
+}

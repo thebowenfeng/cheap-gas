@@ -5,7 +5,8 @@ import {createPortal} from "react-dom";
 
 interface StationMarkerProps {
     station: GasStation,
-    map: Map
+    map: Map,
+    showPrice: boolean
 }
 
 const prettifyUnixTimestamp = (timestamp: number) => {
@@ -39,15 +40,20 @@ export const StationMarkerView = ({ station, onClose }: { station: GasStation, o
     )
 }
 
-const StationMarkerIcon = ({ station }: { station: GasStation }) => (
-    <img
-        src={`http://localhost:8080/icons/${station.icon}`}
-        alt={`${station.name} marker`}
-        className="station-pop-up-img"
-    />
+const StationMarkerIcon = ({ station, showPrice }: { station: GasStation, showPrice: boolean }) => (
+    <div className="station-icon-container">
+        {showPrice && (
+            <div className="station-icon-price"><h3>{station.prices[0].amount}</h3></div>
+        )}
+        <img
+            src={`http://localhost:8080/icons/${station.icon}`}
+            alt={`${station.name} marker`}
+            className="station-pop-up-img"
+        />
+    </div>
 )
 
-export const StationMarker: FC<StationMarkerProps> = ({ station, map }) => {
+export const StationMarker: FC<StationMarkerProps> = ({ station, map, showPrice }) => {
     const markerContainer = document.createElement('div');
     const popupContainer = document.createElement('div');
     const popup = useMemo(() => {
@@ -80,7 +86,7 @@ export const StationMarker: FC<StationMarkerProps> = ({ station, map }) => {
     return (
         <>
             {createPortal(
-                <StationMarkerIcon station={station} />,
+                <StationMarkerIcon station={station} showPrice={showPrice} />,
                 markerContainer
             )}
             {createPortal(

@@ -191,3 +191,19 @@ h4 {
   display: flex;
   flex-direction: row;
 }
+
+.station-icon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 2px;
+}
+
+.station-icon-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid black;
+  background-color: white;
+  padding: 2px;
+}

@@ -1,5 +1,5 @@
 import {startTransition, Suspense, use, useEffect, useMemo, useRef, useState} from 'react';
-import {GeolocateControl, Map, setWorkerUrl} from 'maplibre-gl';
+import {Map, setWorkerUrl} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {searchGasStations} from "../api/client.ts";
@@ -7,6 +7,7 @@ import {StationMarker} from "./marker.tsx";
 import {calcLongLatDistance, debounce} from "../common/utils.ts";
 import type {GasStation} from "../api/types.ts";
 import type {Coordinate, FuelType} from "../common/types.ts";
+import {LocationMarker, SelfLocationMarker} from "./current-location-marker.tsx";
 
 setWorkerUrl(workerUrl);
 
@@ -19,10 +20,12 @@ interface MarkerListProps {
 interface MapFilter {
     gasTypeFilter?: FuelType
     gpsLocationFilter?: Coordinate
+    customLocationFilter?: { enabled: boolean, coordinate?: Coordinate }
 }
 
 interface MapComponentProps {
     mapFilter?: MapFilter;
+    onMapClick?: (coordinate: Coordinate) => void;
 }
 
 const DISTANCE_BUCKETS = [1000, 2000, 4000, 8000, 16000];
@@ -33,9 +36,12 @@ const findLeastBucket = (distance: number) => {
 const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
     const result = use(getStationRequest);
     const gpsFiltered = useMemo(() => {
-        if (!mapFilter?.gpsLocationFilter) {
+        if (!mapFilter?.gpsLocationFilter && (!mapFilter?.customLocationFilter?.enabled || !mapFilter?.customLocationFilter?.coordinate)) {
             return result;
         }
+        const coords = mapFilter?.customLocationFilter?.enabled && mapFilter?.customLocationFilter?.coordinate
+            ? mapFilter.customLocationFilter.coordinate! : mapFilter.gpsLocationFilter!;
+
         const distanceBucketMap: Record<number, {
             cheapest: GasStation | undefined,
             cheapestDistance: number | undefined
@@ -48,7 +54,7 @@ const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
         }), {});
 
         result?.forEach((station) => {
-            const distance = calcLongLatDistance(station.location, mapFilter.gpsLocationFilter!);
+            const distance = calcLongLatDistance(station.location, coords);
             if (distance === undefined) {
                 return;
             }
@@ -78,7 +84,7 @@ const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
 
         const finalResults = Object.values(distanceBucketMap).map((val) => val.cheapest).filter((val) => val !== undefined);
         return [...new window.Map(finalResults.map((station) => [station.id, station])).values()];
-    }, [result, mapFilter?.gpsLocationFilter, mapFilter?.gasTypeFilter])
+    }, [result, mapFilter])
 
     const filterGasStation = (gasStation: GasStation) => {
         if (mapFilter) {
@@ -97,11 +103,18 @@ const MarkerList = ({ getStationRequest, map, mapFilter }: MarkerListProps) => {
             }
         }
 
-        return <StationMarker station={stationCopy} map={map} key={station.id} />
+        return (
+            <StationMarker
+                station={stationCopy}
+                map={map}
+                key={station.id}
+                showPrice={mapFilter?.gpsLocationFilter !== undefined || mapFilter?.gasTypeFilter !== undefined || mapFilter?.customLocationFilter?.coordinate !== undefined}
+            />
+        );
     })
 };
 
-export const MapComponent = ({ mapFilter }: MapComponentProps) => {
+export const MapComponent = ({ mapFilter, onMapClick }: MapComponentProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [map, setMap] = useState<Map | undefined>(undefined);
     const [getStationRequest, setGetStationRequest] = useState<Promise<GasStation[] | undefined>>(Promise.resolve(undefined));
@@ -119,13 +132,6 @@ export const MapComponent = ({ mapFilter }: MapComponentProps) => {
                 center: initialCoords ? [initialCoords.longitude, initialCoords.latitude] : [144.9631, -37.8136],
                 zoom: 14,
             });
-            map.addControl(
-                new GeolocateControl({
-                    positionOptions: { enableHighAccuracy: true },
-                    trackUserLocation: true,
-                    showUserLocation: true
-                })
-            );
             setMap(map);
 
             const setBounds = () => {
@@ -145,7 +151,11 @@ export const MapComponent = ({ mapFilter }: MapComponentProps) => {
                     }))
                 })
             }
+
             map.on('move', debounce(300, setBounds));
+            map.on('click', (ev) => {
+                onMapClick?.({ longitude: ev.lngLat.lng, latitude: ev.lngLat.lat });
+            })
         }
 
         if ('geolocation' in navigator) {
@@ -159,7 +169,7 @@ export const MapComponent = ({ mapFilter }: MapComponentProps) => {
         }
 
         return () => map?.remove();
-    }, []);
+    }, [onMapClick]);
 
     return (
         <>
@@ -169,6 +179,8 @@ export const MapComponent = ({ mapFilter }: MapComponentProps) => {
                     <MarkerList getStationRequest={getStationRequest} map={map} mapFilter={mapFilter} />
                 )}
             </Suspense>
+            {map && mapFilter?.customLocationFilter === undefined && <SelfLocationMarker map={map} />}
+            {map && mapFilter?.customLocationFilter?.coordinate && mapFilter.customLocationFilter?.enabled && <LocationMarker map={map} coordinate={mapFilter?.customLocationFilter?.coordinate} />}
         </>
     );
 };

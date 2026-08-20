@@ -63,12 +63,18 @@ const FILTER_TYPES = [
     {
         label: 'My location',
         value: 'GPS'
+    },
+    {
+        label: 'Choose location',
+        value: 'CUSTOM_GPS'
     }
 ];
 
 const mapFilterToFilterType = (mapFilter: ComponentProps<typeof MapComponent>['mapFilter']) => {
     if (mapFilter?.gpsLocationFilter) {
         return 'GPS';
+    } else if (mapFilter?.customLocationFilter) {
+        return 'CUSTOM_GPS'
     }
     return undefined;
 }
@@ -77,6 +83,12 @@ const App = () => {
     const [mapFilter, setMapFilter] = useState<ComponentProps<typeof MapComponent>['mapFilter']>(undefined);
     const [currPos, setCurrPos] = useState<Coordinate | undefined>(undefined);
 
+    const onMapClick = (coordinate: Coordinate) => {
+        if (mapFilter?.customLocationFilter?.enabled) {
+            setMapFilter((filter) => ({ ...filter, gpsLocationFilter: undefined, customLocationFilter: { enabled: true, coordinate: coordinate } }));
+        }
+    }
+
     return (
       <>
           <div className="header-container">
@@ -84,10 +96,12 @@ const App = () => {
                   options={FILTER_TYPES}
                   value={mapFilterToFilterType(mapFilter)}
                   onValueChange={(value) => {
-                      if (value !== 'DESELECT') {
-                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: currPos }));
+                      if (value === 'GPS') {
+                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: currPos, customLocationFilter: undefined }));
+                      } else if (value === 'CUSTOM_GPS') {
+                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: undefined, customLocationFilter: { enabled: true } }))
                       } else {
-                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: undefined }));
+                          setMapFilter((filter) => ({ ...filter, gpsLocationFilter: undefined, customLocationFilter: undefined }));
                       }
                   }}
               />
@@ -103,7 +117,7 @@ const App = () => {
                   }}
               />
           </div>
-          <MapComponent mapFilter={mapFilter} />
+          <MapComponent mapFilter={mapFilter} onMapClick={onMapClick} />
           <GPS
               onLocationChange={(pos) => {
                   setCurrPos(pos);
